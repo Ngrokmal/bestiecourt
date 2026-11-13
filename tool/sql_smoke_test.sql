@@ -359,10 +359,6 @@ insert into auth.users (id, email, raw_user_meta_data) values
     '{"display_name": "Fourth"}'::jsonb
   );
 
-update public.coin_wallets
-set balance = 5
-where user_id = '44444444-4444-4444-4444-444444444444';
-
 insert into public.friendships (requester_id, addressee_id, status)
 values (
   '44444444-4444-4444-4444-444444444444',
@@ -398,6 +394,11 @@ where match_id = :'match2'::uuid
   and user_id = '44444444-4444-4444-4444-444444444444'
 \gset
 select set_config('smoke.punishment2', :'punishment2', false);
+
+-- Simulate an almost-empty wallet *after* the match reward has been paid.
+update public.coin_wallets
+set balance = 5
+where user_id = '44444444-4444-4444-4444-444444444444';
 
 set role authenticated;
 set request.jwt.claim.sub = '44444444-4444-4444-4444-444444444444';
