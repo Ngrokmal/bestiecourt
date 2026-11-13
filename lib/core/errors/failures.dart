@@ -99,3 +99,11 @@ final class FailureResult<T> extends Result<T> {
   const FailureResult(this.failure);
   final AppFailure failure;
 }
+
+/// Returns the safe user-facing message for a failed [Result], or null.
+String? failureText<T>(Result<T> result) {
+  return result.fold<String?>(
+    onSuccess: (T data) => null,
+    onFailure: (AppFailure failure) => failure.message,
+  );
+}
