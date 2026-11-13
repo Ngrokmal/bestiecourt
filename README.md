@@ -7,10 +7,18 @@ part of the MVP.
 
 ## Status (honest)
 
-MVP vertical slice implemented in source: auth, friends, Daily Roast Battle
-with server-resolved votes, coin ledger, safe punishments, match history.
-The APK is produced **only** by GitHub Actions. Device QA is pending — see
-`docs/TESTING.md` for what has and has not been run.
+MVP vertical slice implemented: auth, friends, Daily Roast Battle with
+server-resolved votes, coin ledger, safe punishments, match history.
+
+Verified on 2026-11-13 (GitHub Actions): `flutter analyze` clean,
+`flutter test` pass, **release APK builds**, and the SQL migrations + seed +
+RLS/business-rule smoke test all pass on PostgreSQL 16.
+
+Not yet verified: real two-device play (owner action), widget/pgTAP tests,
+`dart format` (runs report-only). Details: `docs/TESTING.md`.
+
+**Download the APK:** GitHub → Actions → latest green *Android APK* run →
+Artifacts → `roast-my-bestie-apk`.
 
 ## Quick start
 

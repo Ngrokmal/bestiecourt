@@ -34,6 +34,10 @@ Push to `main` (or run `Android APK` workflow manually). The workflow:
 4. builds `app-release.apk` and uploads it as the artifact
    `roast-my-bestie-apk` (7-day retention).
 
+A second job, `sql-check`, applies the migrations + seed to a throwaway
+PostgreSQL 16 instance and runs `tool/sql_smoke_test.sql` (RLS + RPC rules), so
+a broken migration fails CI before it reaches your Supabase project.
+
 Download the APK from the Actions run page on your phone and install it
 (“Install from unknown sources”). No `service_role` key, keystore or password is
 stored in the repository.
