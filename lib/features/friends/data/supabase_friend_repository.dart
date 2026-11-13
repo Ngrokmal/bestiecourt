@@ -11,7 +11,7 @@ class SupabaseFriendRepository implements FriendRepository {
 
   @override
   Future<List<FriendSummary>> fetchFriends() async {
-    final dynamic raw = await _client.rpc('rpc_list_friends');
+    final dynamic raw = await _client.rpc<dynamic>('rpc_list_friends');
     return asJsonList(raw)
         .map(_mapFriend)
         .where((FriendSummary friend) => friend.userId.isNotEmpty)
@@ -24,7 +24,7 @@ class SupabaseFriendRepository implements FriendRepository {
     if (clean.length < 4 || clean.length > 12) {
       return null;
     }
-    final dynamic raw = await _client.rpc(
+    final dynamic raw = await _client.rpc<dynamic>(
       'rpc_lookup_invite_code',
       params: <String, dynamic>{'p_code': clean},
     );
@@ -42,7 +42,7 @@ class SupabaseFriendRepository implements FriendRepository {
 
   @override
   Future<void> sendRequestByCode(String code) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_send_friend_request_by_code',
       params: <String, dynamic>{'p_code': code.trim().toUpperCase()},
     );
@@ -53,7 +53,7 @@ class SupabaseFriendRepository implements FriendRepository {
     required String friendshipId,
     required bool accept,
   }) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_respond_friend_request',
       params: <String, dynamic>{
         'p_friendship_id': friendshipId,
@@ -64,7 +64,7 @@ class SupabaseFriendRepository implements FriendRepository {
 
   @override
   Future<void> removeFriendship(String friendshipId) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_remove_friendship',
       params: <String, dynamic>{'p_friendship_id': friendshipId},
     );

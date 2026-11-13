@@ -98,7 +98,7 @@ class SupabaseProfileRepository implements ProfileRepository {
         appVersion = '';
       }
 
-      await _client.rpc(
+      await _client.rpc<dynamic>(
         'rpc_register_installation',
         params: <String, dynamic>{
           'p_installation_id': installationId,

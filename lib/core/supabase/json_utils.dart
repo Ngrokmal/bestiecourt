@@ -1,5 +1,5 @@
-/// Defensive JSON helpers. Server payloads are untrusted input: never cast
-/// blindly and never assume a field exists.
+// Defensive JSON helpers. Server payloads are untrusted input: never cast
+// blindly and never assume a field exists.
 
 Map<String, dynamic> asJsonMap(Object? value) {
   if (value is Map<String, dynamic>) {

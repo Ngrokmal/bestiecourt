@@ -10,7 +10,8 @@ import '../domain/entities/battle_view.dart';
 
 /// Realtime-backed view of one match. The stream emits authoritative server
 /// state; Realtime events only trigger a re-fetch.
-final StreamProviderFamily<BattleView, String> battleStreamProvider =
+final AutoDisposeStreamProviderFamily<BattleView, String>
+    battleStreamProvider =
     StreamProvider.autoDispose.family<BattleView, String>(
   (Ref ref, String matchId) =>
       ref.watch(roastBattleRepositoryProvider).watchMatch(matchId),

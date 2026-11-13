@@ -14,7 +14,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
 
   @override
   Future<BattleView> fetchMatch(String matchId) async {
-    final dynamic raw = await _client.rpc(
+    final dynamic raw = await _client.rpc<dynamic>(
       'rpc_get_match',
       params: <String, dynamic>{'p_match_id': matchId},
     );
@@ -83,6 +83,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
       if (active != null) {
         await active.unsubscribe();
       }
+      await controller.close();
     };
 
     return controller.stream;
@@ -90,7 +91,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
 
   @override
   Future<List<MatchSummary>> fetchOpenMatches() async {
-    final dynamic raw = await _client.rpc(
+    final dynamic raw = await _client.rpc<dynamic>(
       'rpc_list_matches',
       params: <String, dynamic>{
         'p_limit': 20,
@@ -109,7 +110,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
   Future<CursorPage<MatchSummary>> fetchHistory(
     CursorPageRequest request,
   ) async {
-    final dynamic raw = await _client.rpc(
+    final dynamic raw = await _client.rpc<dynamic>(
       'rpc_list_matches',
       params: <String, dynamic>{
         'p_limit': request.limit + 1,
@@ -146,7 +147,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
 
   @override
   Future<String> createMatch(String friendId) async {
-    final dynamic raw = await _client.rpc(
+    final dynamic raw = await _client.rpc<dynamic>(
       'rpc_create_match',
       params: <String, dynamic>{'p_friend_id': friendId},
     );
@@ -160,7 +161,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
 
   @override
   Future<void> joinMatch(String matchId) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_join_match',
       params: <String, dynamic>{'p_match_id': matchId},
     );
@@ -171,7 +172,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
     required String matchId,
     required String votedForId,
   }) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_submit_vote',
       params: <String, dynamic>{
         'p_match_id': matchId,
@@ -185,7 +186,7 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
     required String punishmentId,
     required String status,
   }) async {
-    await _client.rpc(
+    await _client.rpc<dynamic>(
       'rpc_set_punishment_status',
       params: <String, dynamic>{
         'p_punishment_id': punishmentId,
