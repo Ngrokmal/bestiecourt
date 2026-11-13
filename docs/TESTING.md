@@ -60,3 +60,28 @@ dart format lib test
 10. Lose → punishment card → complete / skip (coins −15).
 11. Skip with too few coins → “পর্যাপ্ত কয়েন নেই”.
 12. Airplane mode → error + retry state (no infinite spinner).
+
+## Feature-pack coverage (migration `20261113000200_feature_packs.sql`)
+
+`tool/sql_smoke_test.sql` now has 20 sections. Sections 1–10 are the original
+daily-roast flows; 11–20 cover the feature pack:
+
+| § | What it proves |
+|---|---|
+| 11 | Secret accusation: the target *cannot* read the body before guessing, guessing twice is rejected, body is revealed after the guess |
+| 12 | Bestie Court: file → respond → both votes → server decides `guilty` (client never sets the verdict) |
+| 13 | Friendship Contract: starts `pending`, only becomes `active` after the second signature |
+| 14 | Confessions: invisible to a friend until `rpc_share_confession` runs |
+| 15 | Social pings: per-day rate limit + `nudges` preference → `RECIPIENT_MUTED` |
+| 16 | Inbox unread count / mark-all-read, title catalogue, friends leaderboard, weekly awards |
+| 17 | Revenge round linked to the original match |
+| 18 | Punishment reroll allowed only once (and not on an already-skipped row) |
+| 19 | Block removes the friendship and stops new pair interactions |
+| 20 | Reports are stored; no negative coin balance exists |
+
+`test/unit/feature_domain_test.dart` checks the client-side state machines that
+gate those screens (bluff guessing, court voting, contract signing, ping
+helpers, unread badge, title flags).
+
+Still manual (needs two phones): animations, Realtime feel, share cards, and the
+Bengali copy review.

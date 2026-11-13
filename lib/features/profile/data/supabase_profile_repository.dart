@@ -20,7 +20,9 @@ class SupabaseProfileRepository implements ProfileRepository {
     final String userId = _requireUserId();
     final List<Map<String, dynamic>> rows = await _client
         .from('profiles')
-        .select('id, display_name, invite_code, wins, active_title_code')
+        .select(
+          'id, display_name, invite_code, wins, active_title_code, preferences',
+        )
         .eq('id', userId)
         .limit(1);
 
@@ -28,12 +30,16 @@ class SupabaseProfileRepository implements ProfileRepository {
       throw StateError('PROFILE_NOT_FOUND');
     }
     final Map<String, dynamic> row = rows.first;
+    final Map<String, dynamic> preferences = asJsonMap(row['preferences']);
     return Profile(
       id: asString(row['id']),
       displayName: asString(row['display_name'], fallback: 'Bestie'),
       inviteCode: asString(row['invite_code']),
       wins: asInt(row['wins']),
       activeTitleCode: asStringOrNull(row['active_title_code']),
+      nudgesEnabled: preferences['nudges'] != 'false',
+      slapsEnabled: preferences['slaps'] != 'false',
+      humor: asString(preferences['humor'], fallback: 'playful'),
     );
   }
 
@@ -62,6 +68,44 @@ class SupabaseProfileRepository implements ProfileRepository {
         .from('profiles')
         .update(<String, dynamic>{'display_name': clean})
         .eq('id', userId);
+  }
+
+  @override
+  Future<List<CoinEntry>> fetchCoinHistory() async {
+    final String userId = _requireUserId();
+    final List<Map<String, dynamic>> rows = await _client
+        .from('coin_transactions')
+        .select('amount, kind, created_at')
+        .eq('user_id', userId)
+        .order('created_at', ascending: false)
+        .limit(50);
+    return rows
+        .map(
+          (Map<String, dynamic> row) => CoinEntry(
+            amount: asInt(row['amount']),
+            kind: asString(row['kind']),
+            createdAt: asDateOrNull(row['created_at']),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  @override
+  Future<void> updatePreferences({
+    required bool nudges,
+    required bool slaps,
+    required String humor,
+  }) async {
+    await _client.rpc<dynamic>(
+      'rpc_update_preferences',
+      params: <String, dynamic>{
+        'p_prefs': <String, dynamic>{
+          'nudges': nudges ? 'true' : 'false',
+          'slaps': slaps ? 'true' : 'false',
+          'humor': humor,
+        },
+      },
+    );
   }
 
   @override

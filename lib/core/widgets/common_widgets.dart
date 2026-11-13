@@ -352,3 +352,37 @@ void showAppSnack(BuildContext context, String message) {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(message)));
 }
+
+/// Compact inline error with a retry action (used by feature screens that load
+/// their own data instead of using [AsyncView]).
+class ErrorBanner extends StatelessWidget {
+  const ErrorBanner({
+    required this.message,
+    required this.onRetry,
+    super.key,
+  });
+
+  final String message;
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: <Widget>[
+          const Icon(Icons.error_outline, color: AppColors.danger, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(message, style: const TextStyle(fontSize: 13)),
+          ),
+          TextButton(
+            onPressed: () async {
+              await onRetry();
+            },
+            child: const Text('আবার'),
+          ),
+        ],
+      ),
+    );
+  }
+}

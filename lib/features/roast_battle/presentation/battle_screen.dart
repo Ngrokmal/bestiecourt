@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lottie/lottie.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../app/theme/design_tokens.dart';
 import '../../../core/di/providers.dart';
@@ -88,13 +90,17 @@ class _BattleBody extends ConsumerWidget {
             battle: battle,
             onPunishmentStatus: (String status) => _run(
               context,
-              () => ref
-                  .read(roastBattleRepositoryProvider)
-                  .setPunishmentStatus(
-                    punishmentId: battle.punishment?.id ?? '',
-                    status: status,
-                  ),
-              successMessage: 'শাস্তির স্ট্যাটাস আপডেট হয়েছে।',
+              () => status == 'reroll'
+                  ? ref.read(roastBattleRepositoryProvider).rerollPunishment(
+                        battle.punishment?.id ?? '',
+                      )
+                  : ref.read(roastBattleRepositoryProvider).setPunishmentStatus(
+                        punishmentId: battle.punishment?.id ?? '',
+                        status: status,
+                      ),
+              successMessage: status == 'reroll'
+                  ? 'নতুন শাস্তি এসেছে!'
+                  : 'শাস্তির স্ট্যাটাস আপডেট হয়েছে।',
             ),
           )
         else
@@ -505,6 +511,13 @@ class _ResultPanel extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () => onPunishmentStatus('reroll'),
+                    child: const Text('একবার শাস্তি বদলান 🎡'),
+                  ),
+                ),
                 const Text(
                   'স্কিপ করতে চাইলে কয়েন কাটা হবে — সার্ভারেই হিসাব হয়।',
                   style: TextStyle(fontSize: 11, color: AppColors.textMuted),
@@ -512,6 +525,47 @@ class _ResultPanel extends ConsumerWidget {
               ],
             ),
           ),
+        const SizedBox(height: AppSpacing.lg),
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  try {
+                    final String newId = await ref
+                        .read(roastBattleRepositoryProvider)
+                        .requestRevenge(battle.id);
+                    if (!context.mounted) {
+                      return;
+                    }
+                    await context.push('/battle/$newId');
+                  } on Object catch (error) {
+                    if (context.mounted) {
+                      showAppSnack(context, mapErrorToFailure(error).message);
+                    }
+                  }
+                },
+                icon: const Icon(Icons.replay, size: 18),
+                label: const Text('রিভেঞ্জ'),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await Share.share(
+                    '😂 Roast My Bestie\n'
+                    'প্রশ্ন: ${battle.questionPrompt}\n'
+                    'ফলাফল: $headline',
+                    subject: 'Roast My Bestie',
+                  );
+                },
+                icon: const Icon(Icons.ios_share, size: 18),
+                label: const Text('শেয়ার'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

@@ -195,6 +195,27 @@ class SupabaseRoastBattleRepository implements RoastBattleRepository {
     );
   }
 
+  @override
+  Future<void> rerollPunishment(String punishmentId) async {
+    await _client.rpc<dynamic>(
+      'rpc_reroll_punishment',
+      params: <String, dynamic>{'p_punishment_id': punishmentId},
+    );
+  }
+
+  @override
+  Future<String> requestRevenge(String matchId) async {
+    final dynamic raw = await _client.rpc<dynamic>(
+      'rpc_request_revenge',
+      params: <String, dynamic>{'p_match_id': matchId},
+    );
+    final String newMatchId = asString(asJsonMap(raw)['match_id']);
+    if (newMatchId.isEmpty) {
+      throw StateError('MATCH_NOT_FOUND');
+    }
+    return newMatchId;
+  }
+
   BattleView _mapBattle(Map<String, dynamic> data) {
     final Map<String, dynamic> punishment = asJsonMap(data['punishment']);
     return BattleView(

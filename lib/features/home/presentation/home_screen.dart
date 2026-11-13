@@ -6,6 +6,7 @@ import '../../../app/theme/design_tokens.dart';
 import '../../../core/di/providers.dart';
 import '../../../core/errors/failure_mapper.dart';
 import '../../../core/widgets/common_widgets.dart';
+import '../../../core/widgets/friend_picker.dart';
 import '../../friends/domain/entities/friend_summary.dart';
 import '../../profile/domain/entities/profile.dart';
 import '../../roast_battle/domain/entities/battle_view.dart';
@@ -17,6 +18,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<Profile> profile = ref.watch(myProfileProvider);
     final AsyncValue<int> coins = ref.watch(myCoinBalanceProvider);
+    final AsyncValue<int> unread = ref.watch(unreadNotificationsProvider);
     final AsyncValue<List<MatchSummary>> openMatches =
         ref.watch(openMatchesProvider);
 
@@ -42,8 +44,25 @@ class HomeScreen extends ConsumerWidget {
           ],
         ),
         actions: <Widget>[
+          IconButton(
+            tooltip: 'ইনবক্স',
+            onPressed: () => context.push('/notifications'),
+            icon: Badge(
+              isLabelVisible: unread.maybeWhen(
+                data: (int value) => value > 0,
+                orElse: () => false,
+              ),
+              label: Text(
+                unread.maybeWhen(
+                  data: (int value) => '$value',
+                  orElse: () => '0',
+                ),
+              ),
+              child: const Icon(Icons.notifications_none),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: AppSpacing.lg),
+            padding: const EdgeInsets.only(right: AppSpacing.md),
             child: Center(
               child: CoinBadge(
                 balance: coins.maybeWhen(
@@ -61,6 +80,7 @@ class HomeScreen extends ConsumerWidget {
           ref.invalidate(myCoinBalanceProvider);
           ref.invalidate(friendsProvider);
           ref.invalidate(openMatchesProvider);
+          ref.invalidate(unreadNotificationsProvider);
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -68,9 +88,15 @@ class HomeScreen extends ConsumerWidget {
           children: <Widget>[
             _DailyBattleCard(onStart: () => _startBattle(context, ref)),
             const SizedBox(height: AppSpacing.lg),
+            const SectionHeader(
+              title: 'সব গেম',
+              subtitle: 'মজার সব ফিচার এক জায়গায়',
+            ),
+            _GameGrid(),
+            const SizedBox(height: AppSpacing.lg),
             SectionHeader(
               title: 'চলমান ম্যাচ',
-              subtitle: 'বন্ধুর অপেক্ষায় বা ভোটের অপেক্ষায়',
+              subtitle: 'বন্ধুর অপেক্ষায় বা ভোটের অপেক্ষায়',
               trailing: IconButton(
                 tooltip: 'রিফ্রেশ',
                 onPressed: () => ref.invalidate(openMatchesProvider),
@@ -104,17 +130,14 @@ class HomeScreen extends ConsumerWidget {
               },
             ),
             const SizedBox(height: AppSpacing.lg),
-            const SectionHeader(
-              title: 'কীভাবে খেলবেন',
-              subtitle: '৩ ধাপে মজা',
-            ),
+            const SectionHeader(title: 'কীভাবে খেলবেন', subtitle: '৩ ধাপে মজা'),
             const AppCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   _HowToStep(
                     number: '১',
-                    text: 'বন্ধুকে ইনভাইট কোড দিয়ে যোগ করুন।',
+                    text: 'বন্ধুকে ইনভাইট কোড দিয়ে যোগ করুন।',
                   ),
                   SizedBox(height: AppSpacing.md),
                   _HowToStep(
@@ -129,6 +152,26 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/settings'),
+                    icon: const Icon(Icons.settings_outlined, size: 18),
+                    label: const Text('সেটিংস'),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/awards'),
+                    icon: const Icon(Icons.emoji_events_outlined, size: 18),
+                    label: const Text('লিডারবোর্ড'),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: AppSpacing.xl),
           ],
         ),
@@ -138,54 +181,14 @@ class HomeScreen extends ConsumerWidget {
 
   Future<void> _startBattle(BuildContext context, WidgetRef ref) async {
     try {
-      final AsyncValue<List<FriendSummary>> friendsAsync =
-          ref.read(friendsProvider);
-      final List<FriendSummary> all = friendsAsync.maybeWhen(
-        data: (List<FriendSummary> data) => data,
-        orElse: () => <FriendSummary>[],
+      final FriendSummary? picked = await pickFriend(
+        context,
+        ref,
+        title: 'কাকে চ্যালেঞ্জ করবেন?',
       );
-      final List<FriendSummary> accepted = all
-          .where((FriendSummary friend) => friend.isAccepted)
-          .toList(growable: false);
-
-      if (accepted.isEmpty) {
-        showAppSnack(
-          context,
-          'আগে অন্তত একজন বন্ধু যোগ করুন (বন্ধু ট্যাব দেখুন)।',
-        );
-        return;
-      }
-
-      final FriendSummary? picked = await showModalBottomSheet<FriendSummary>(
-        context: context,
-        backgroundColor: AppColors.surfaceRaised,
-        builder: (BuildContext sheetContext) => SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: <Widget>[
-              const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  'কাকে চ্যালেঞ্জ করবেন?',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-                ),
-              ),
-              ...accepted.map(
-                (FriendSummary friend) => ListTile(
-                  leading: BestieAvatar(name: friend.displayName),
-                  title: Text(friend.displayName),
-                  onTap: () => Navigator.of(sheetContext).pop(friend),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
       if (picked == null || !context.mounted) {
         return;
       }
-
       final String matchId =
           await ref.read(roastBattleRepositoryProvider).createMatch(
                 picked.userId,
@@ -203,6 +206,63 @@ class HomeScreen extends ConsumerWidget {
       showAppSnack(context, mapErrorToFailure(error).message);
     }
   }
+}
+
+class _GameGrid extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    const List<_GameEntry> games = <_GameEntry>[
+      _GameEntry('🎭', 'গোপন অভিযোগ', '/bluff/accusation'),
+      _GameEntry('🤔', 'সত্যি নাকি মিথ্যা', '/bluff/truth_or_lie'),
+      _GameEntry('⚖️', 'বেস্টি কোর্ট', '/court'),
+      _GameEntry('🤝', 'বন্ধুত্বের চুক্তি', '/contracts'),
+      _GameEntry('🔒', 'কনফেশন বক্স', '/confessions'),
+      _GameEntry('😤', 'নাজ-নাজতি', '/social/nudge'),
+      _GameEntry('🩴', 'চপ্পল ওয়াল', '/social/slap'),
+      _GameEntry('🏆', 'টাইটেল ও অ্যাওয়ার্ড', '/awards'),
+    ];
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: 2,
+      childAspectRatio: 2.1,
+      mainAxisSpacing: AppSpacing.md,
+      crossAxisSpacing: AppSpacing.md,
+      children: games
+          .map(
+            (_GameEntry game) => AppCard(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              onTap: () => context.push(game.route),
+              child: Row(
+                children: <Widget>[
+                  Text(game.emoji, style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      game.label,
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+          .toList(growable: false),
+    );
+  }
+}
+
+class _GameEntry {
+  const _GameEntry(this.emoji, this.label, this.route);
+
+  final String emoji;
+  final String label;
+  final String route;
 }
 
 class _DailyBattleCard extends StatelessWidget {
@@ -295,7 +355,7 @@ class _OpenMatchTile extends ConsumerWidget {
               ? const StatusChip(label: 'যোগ দিন', color: AppColors.accent)
               : StatusChip(
                   label: match.state == MatchState.waiting
-                      ? 'অপেক্ষায়'
+                      ? 'অপেক্ষায়'
                       : 'ভোট চলছে',
                   color: AppColors.teal,
                 ),

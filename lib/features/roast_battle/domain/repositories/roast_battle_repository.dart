@@ -25,4 +25,9 @@ abstract class RoastBattleRepository {
     required String punishmentId,
     required String status,
   });
+
+  Future<void> rerollPunishment(String punishmentId);
+
+  /// Creates the rematch the opponent must join. Returns the new match id.
+  Future<String> requestRevenge(String matchId);
 }

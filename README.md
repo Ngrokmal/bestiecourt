@@ -20,6 +20,21 @@ Not yet verified: real two-device play (owner action), widget/pgTAP tests,
 **Download the APK:** GitHub → Actions → latest green *Android APK* run →
 Artifacts → `roast-my-bestie-apk`.
 
+## Features
+
+Core games: daily roast battle (hidden votes, server result), secret accusation,
+truth-or-lie bluff, bestie court (complaint → defence → votes → verdict),
+punishment wheel with paid skip, revenge round.
+
+Social extras: friendship contracts (both must sign, 30-day expiry), private
+confessions box with explicit one-friend sharing, silent-treatment /
+ghosting-reminder nudges, virtual tomato & slipper wall, block & report.
+
+Rewards: friendship coins + immutable ledger, title catalogue + active title,
+weekly friends leaderboard, weekly awards, shareable verdict/award text,
+notification inbox with unread badge, and a preferences screen (humour level,
+nudges, slaps).
+
 ## Quick start
 
 ```bash

@@ -2,6 +2,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/data/supabase_auth_repository.dart';
+import '../../features/awards/data/supabase_awards_repository.dart';
+import '../../features/awards/domain/awards.dart';
+import '../../features/bestie_court/data/supabase_court_repository.dart';
+import '../../features/bestie_court/domain/court_case.dart';
+import '../../features/bluff/data/supabase_bluff_repository.dart';
+import '../../features/bluff/domain/bluff_round.dart';
+import '../../features/confessions/data/supabase_confession_repository.dart';
+import '../../features/confessions/domain/confession.dart';
+import '../../features/contracts/data/supabase_contract_repository.dart';
+import '../../features/contracts/domain/friendship_contract.dart';
+import '../../features/notifications/data/supabase_notification_repository.dart';
+import '../../features/notifications/domain/app_notification.dart';
+import '../../features/social/data/supabase_social_repository.dart';
+import '../../features/social/domain/social_ping.dart';
 import '../../features/auth/domain/repositories/auth_repository.dart';
 import '../../features/friends/data/supabase_friend_repository.dart';
 import '../../features/friends/domain/entities/friend_summary.dart';
@@ -69,4 +83,44 @@ final FutureProvider<List<FriendSummary>> friendsProvider =
 final FutureProvider<List<MatchSummary>> openMatchesProvider =
     FutureProvider<List<MatchSummary>>(
   (Ref ref) => ref.watch(roastBattleRepositoryProvider).fetchOpenMatches(),
+);
+
+final Provider<BluffRepository> bluffRepositoryProvider =
+    Provider<BluffRepository>((Ref ref) {
+  return SupabaseBluffRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<CourtRepository> courtRepositoryProvider =
+    Provider<CourtRepository>((Ref ref) {
+  return SupabaseCourtRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<ContractRepository> contractRepositoryProvider =
+    Provider<ContractRepository>((Ref ref) {
+  return SupabaseContractRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<ConfessionRepository> confessionRepositoryProvider =
+    Provider<ConfessionRepository>((Ref ref) {
+  return SupabaseConfessionRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<SocialRepository> socialRepositoryProvider =
+    Provider<SocialRepository>((Ref ref) {
+  return SupabaseSocialRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<AwardsRepository> awardsRepositoryProvider =
+    Provider<AwardsRepository>((Ref ref) {
+  return SupabaseAwardsRepository(ref.watch(supabaseClientProvider));
+});
+
+final Provider<NotificationRepository> notificationRepositoryProvider =
+    Provider<NotificationRepository>((Ref ref) {
+  return SupabaseNotificationRepository(ref.watch(supabaseClientProvider));
+});
+
+/// Unread inbox badge.
+final FutureProvider<int> unreadNotificationsProvider = FutureProvider<int>(
+  (Ref ref) => ref.watch(notificationRepositoryProvider).fetchUnreadCount(),
 );

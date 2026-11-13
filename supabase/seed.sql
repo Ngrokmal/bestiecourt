@@ -52,3 +52,48 @@ values
     'food', 15, true
   )
 on conflict (code) do nothing;
+
+-- Title catalogue (earned titles are granted server-side in fn_resolve_match).
+insert into public.title_catalog (code, label, description, emoji, enabled)
+values
+  ('reply_ghost', 'Reply Ghost', 'একটি ম্যাচ শেষ করেছেন', '👻', true),
+  ('drama_queen', 'Drama Queen', '৫টি ম্যাচ খেলেছেন', '🎭', true),
+  ('roast_champion', 'Roast Champion', '৩টি ম্যাচ জিতেছেন', '🏆', true)
+on conflict (code) do nothing;
+
+-- Friendship contract templates (always entertainment-only).
+insert into public.contract_templates (code, title, clauses, enabled)
+values
+  (
+    'fries_pact',
+    'Fries শান্তি চুক্তি',
+    '["বন্ধুর fries অনুমতি ছাড়া খাওয়া যাবে না।",
+      "শেষ bite ভাগ করে খেতে হবে।",
+      "ভাঙলে একটি মজার ইমোজি পাঠাতে হবে।"]'::jsonb,
+    true
+  ),
+  (
+    'reply_pact',
+    'Reply শান্তি চুক্তি',
+    '["seen করে পালানো যাবে না।",
+      "৫ ঘণ্টার বেশি দেরি হলে একটি দুঃখিত স্টিকার বাধ্যতামূলক।",
+      "জরিমানা শুধু মজার কসমেটিক, আসল কিছু নয়।"]'::jsonb,
+    true
+  ),
+  (
+    'bestie_pact',
+    'Bestie চিরকালের চুক্তি',
+    '["একজনের দুঃসময়ে অন্যজন থাকবে।",
+      "গোপন কথা কারো সাথে শেয়ার হবে না।",
+      "প্রতি সপ্তাহে অন্তত একটি মজার ম্যাচ খেলতে হবে।"]'::jsonb,
+    true
+  )
+on conflict (code) do nothing;
+
+-- Extra harmless punishments for the wheel.
+insert into public.punishments (code, display_text, category, coin_cost, enabled)
+values
+  ('emoji_story', 'তিনটি ইমোজি দিয়ে আজকের দিনের গল্প বলুন।', 'fun', 15, true),
+  ('silly_walk', 'ঘরে পাঁচ পা হাঁটুন "বেস্টি স্টাইল"-এ।', 'fun', 15, true),
+  ('voice_note', 'বন্ধুকে একটি মজার কণ্ঠবার্তা পাঠান।', 'fun', 15, true)
+on conflict (code) do nothing;

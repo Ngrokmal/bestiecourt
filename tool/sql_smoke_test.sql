@@ -478,4 +478,373 @@ begin
   end if;
 end $$;
 
+
+-- 11. Secret accusation / truth-or-lie (bluff rounds).
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select (public.rpc_create_bluff_round(
+  'secret_accusation',
+  '22222222-2222-2222-2222-222222222222',
+  'সে লুকিয়ে আমার স্ন্যাকস খেয়েছে',
+  1
+) ->> 'id') as bluff_id
+\gset
+select set_config('smoke.bluff_id', :'bluff_id', false);
+
+do $$
+declare
+  v jsonb;
+  v_body text;
+begin
+  -- the author sees the text, the target must not (server-side hiding)
+  v := public.rpc_list_bluff_rounds('secret_accusation');
+  select (item ->> 'body') into v_body
+  from jsonb_array_elements(v) as item
+  where (item ->> 'id') = current_setting('smoke.bluff_id');
+  if v_body is null then
+    raise exception 'FAIL: author could not read own accusation';
+  end if;
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+
+do $$
+declare
+  v jsonb;
+  v_body text;
+  v_options jsonb;
+begin
+  v := public.rpc_list_bluff_rounds('secret_accusation');
+  select (item ->> 'body'), (item -> 'options')
+  into v_body, v_options
+  from jsonb_array_elements(v) as item
+  where (item ->> 'id') = current_setting('smoke.bluff_id');
+
+  if v_body is not null then
+    raise exception 'FAIL: secret accusation leaked to the target';
+  end if;
+  if jsonb_array_length(v_options) <> 4 then
+    raise exception 'FAIL: accusation options missing';
+  end if;
+
+  -- wrong guess reveals the round but does not match
+  perform public.rpc_guess_bluff_round(
+    current_setting('smoke.bluff_id')::uuid, 0
+  );
+
+  select (item ->> 'body') into v_body
+  from jsonb_array_elements(public.rpc_list_bluff_rounds('secret_accusation'))
+    as item
+  where (item ->> 'id') = current_setting('smoke.bluff_id');
+  if v_body is null then
+    raise exception 'FAIL: accusation not revealed after the guess';
+  end if;
+
+  -- guessing twice is not allowed
+  begin
+    perform public.rpc_guess_bluff_round(
+      current_setting('smoke.bluff_id')::uuid, 1
+    );
+    raise exception 'FAIL: bluff round guessed twice';
+  exception when others then
+    if sqlerrm <> 'INVALID_STATE' then raise; end if;
+  end;
+end $$;
+
+-- 12. Bestie court: file -> respond -> both vote -> server verdict.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select (public.rpc_create_court_case(
+  '22222222-2222-2222-2222-222222222222',
+  'শেষ পিৎজা স্লাইস সে-ই খেয়েছে'
+) ->> 'id') as case_id
+\gset
+select set_config('smoke.case_id', :'case_id', false);
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select public.rpc_respond_court_case(
+  current_setting('smoke.case_id')::uuid,
+  'আমি নির্দোষ, বিড়ালটা খেয়েছে'
+);
+
+do $$
+begin
+  perform public.rpc_vote_court_case(
+    current_setting('smoke.case_id')::uuid, 'guilty'
+  );
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.rpc_vote_court_case(
+  current_setting('smoke.case_id')::uuid,
+  'guilty'
+);
+
+reset role;
+do $$
+declare
+  v_state text;
+  v_verdict text;
+begin
+  select state, verdict into v_state, v_verdict
+  from public.court_cases where id = current_setting('smoke.case_id')::uuid;
+  if v_state <> 'decided' or v_verdict <> 'guilty' then
+    raise exception 'FAIL: court verdict % / %', v_state, v_verdict;
+  end if;
+end $$;
+
+-- 13. Friendship contract needs both signatures.
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select (public.rpc_create_contract(
+  '22222222-2222-2222-2222-222222222222',
+  'fries_pact'
+) ->> 'id') as contract_id
+\gset
+select set_config('smoke.contract_id', :'contract_id', false);
+
+do $$
+declare
+  v_state text;
+begin
+  select state into v_state from public.contracts
+  where id = current_setting('smoke.contract_id')::uuid;
+  if v_state <> 'pending' then
+    raise exception 'FAIL: contract should start pending';
+  end if;
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select public.rpc_respond_contract(
+  current_setting('smoke.contract_id')::uuid, true
+);
+
+reset role;
+do $$
+begin
+  if (
+    select state from public.contracts
+    where id = current_setting('smoke.contract_id')::uuid
+  ) <> 'active' then
+    raise exception 'FAIL: contract not activated after both accepted';
+  end if;
+end $$;
+
+-- 14. Confessions: private by default, readable only when shared.
+set role authenticated;
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+insert into public.confessions (owner_id, content)
+values (
+  '11111111-1111-1111-1111-111111111111',
+  'আমি লুকিয়ে বন্ধুর ফ্রাইস খেয়েছি'
+);
+
+select id as confession_id from public.confessions
+where owner_id = '11111111-1111-1111-1111-111111111111'
+limit 1
+\gset
+select set_config('smoke.confession_id', :'confession_id', false);
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+do $$
+declare
+  v_count int;
+begin
+  select count(*) into v_count from public.confessions
+  where id = current_setting('smoke.confession_id')::uuid;
+  if v_count <> 0 then
+    raise exception 'FAIL: private confession visible to a friend';
+  end if;
+end $$;
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+select public.rpc_share_confession(
+  current_setting('smoke.confession_id')::uuid,
+  '22222222-2222-2222-2222-222222222222'
+);
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+do $$
+declare
+  v_count int;
+begin
+  select count(*) into v_count from public.confessions
+  where id = current_setting('smoke.confession_id')::uuid;
+  if v_count <> 1 then
+    raise exception 'FAIL: shared confession not readable by the friend';
+  end if;
+end $$;
+
+-- 15. Social pings: rate limit + recipient mute preference.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+do $$
+begin
+  perform public.rpc_send_ping(
+    '22222222-2222-2222-2222-222222222222', 'angry'
+  );
+  perform public.rpc_send_ping(
+    '22222222-2222-2222-2222-222222222222', 'angry'
+  );
+  perform public.rpc_send_ping(
+    '22222222-2222-2222-2222-222222222222', 'angry'
+  );
+  begin
+    perform public.rpc_send_ping(
+      '22222222-2222-2222-2222-222222222222', 'angry'
+    );
+    raise exception 'FAIL: nudge rate limit not enforced';
+  exception when others then
+    if sqlerrm <> 'RATE_LIMITED' then raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select public.rpc_update_preferences('{"nudges":"false"}'::jsonb);
+
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+do $$
+begin
+  begin
+    perform public.rpc_send_ping(
+      '22222222-2222-2222-2222-222222222222', 'sorry'
+    );
+    raise exception 'FAIL: muted recipient still received a ping';
+  exception when others then
+    if sqlerrm <> 'RECIPIENT_MUTED' then raise; end if;
+  end;
+end $$;
+
+set request.jwt.claim.sub = '22222222-2222-2222-2222-222222222222';
+select public.rpc_update_preferences('{"nudges":"true"}'::jsonb);
+
+-- 16. Inbox, titles, leaderboard, weekly awards.
+do $$
+declare
+  v_unread int;
+  v_list jsonb;
+begin
+  v_unread := public.rpc_unread_notification_count();
+  if v_unread < 1 then
+    raise exception 'FAIL: inbox did not receive notifications';
+  end if;
+
+  v_list := public.rpc_list_notifications(10);
+  if jsonb_array_length(v_list) < 1 then
+    raise exception 'FAIL: notification list empty';
+  end if;
+
+  perform public.rpc_mark_notifications_read();
+  if public.rpc_unread_notification_count() <> 0 then
+    raise exception 'FAIL: mark-all-read did not clear the badge';
+  end if;
+end $$;
+
+do $$
+declare
+  v jsonb;
+begin
+  v := public.rpc_my_titles();
+  if jsonb_array_length(v) < 1 then
+    raise exception 'FAIL: title catalogue missing (seed?)';
+  end if;
+
+  v := public.rpc_friends_leaderboard();
+  if jsonb_array_length(v) < 1 then
+    raise exception 'FAIL: leaderboard empty';
+  end if;
+
+  v := public.rpc_weekly_awards();
+  if v is null then
+    raise exception 'FAIL: weekly awards returned null';
+  end if;
+end $$;
+
+-- 17. Revenge round from a completed match.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+select (public.rpc_request_revenge(
+  current_setting('smoke.match_id')::uuid
+) ->> 'match_id') as revenge_id
+\gset
+select set_config('smoke.revenge_id', :'revenge_id', false);
+
+do $$
+begin
+  if (
+    select revenge_of from public.matches
+    where id = current_setting('smoke.revenge_id')::uuid
+  ) <> current_setting('smoke.match_id')::uuid then
+    raise exception 'FAIL: revenge match not linked to the original';
+  end if;
+end $$;
+
+-- 18. Punishment reroll is allowed exactly once.
+set request.jwt.claim.sub = '11111111-1111-1111-1111-111111111111';
+
+do $$
+begin
+  begin
+    perform public.rpc_reroll_punishment(
+      current_setting('smoke.punishment_id')::uuid
+    );
+    raise exception 'FAIL: reroll allowed on an already-skipped punishment';
+  exception when others then
+    if sqlerrm <> 'INVALID_STATE' then raise; end if;
+  end;
+end $$;
+
+-- 19. Block removes friendship and stops new pair interactions.
+select public.rpc_block_user(
+  '22222222-2222-2222-2222-222222222222', true
+);
+
+do $$
+begin
+  if public.are_friends(
+    '11111111-1111-1111-1111-111111111111',
+    '22222222-2222-2222-2222-222222222222'
+  ) then
+    raise exception 'FAIL: blocking did not remove the friendship';
+  end if;
+
+  begin
+    perform public.rpc_create_bluff_round(
+      'truth_or_lie',
+      '22222222-2222-2222-2222-222222222222',
+      'আমি কখনো পিৎজা শেয়ার করি না',
+      0
+    );
+    raise exception 'FAIL: blocked pair could start a new round';
+  exception when others then
+    if sqlerrm not in ('NOT_FRIENDS', 'BLOCKED_RELATIONSHIP') then raise; end if;
+  end;
+end $$;
+
+-- 20. Reports are recorded and rate limited per day.
+do $$
+begin
+  perform public.rpc_report_user(
+    '33333333-3333-3333-3333-333333333333', 'spam', 'smoke test'
+  );
+end $$;
+
+reset role;
+
+do $$
+begin
+  if (
+    select count(*) from public.reports
+    where reporter_id = '11111111-1111-1111-1111-111111111111'
+  ) < 1 then
+    raise exception 'FAIL: report not stored';
+  end if;
+  if exists (select 1 from public.coin_wallets where balance < 0) then
+    raise exception 'FAIL: negative coin balance exists';
+  end if;
+end $$;
+
 \echo 'SQL SMOKE TEST PASSED'

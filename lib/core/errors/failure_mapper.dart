@@ -27,6 +27,15 @@ const Map<String, String> _rpcMessages = <String, String>{
   'INSUFFICIENT_COINS': 'পর্যাপ্ত কয়েন নেই।',
   'PUNISHMENT_NOT_FOUND': 'এই শাস্তির তথ্য পাওয়া যায়নি।',
   'INVALID_STATE': 'এই কাজটি এখন করা যাবে না।',
+  'PROFILE_NOT_FOUND': 'প্রোফাইল পাওয়া যায়নি।',
+  'ROUND_NOT_FOUND': 'রাউন্ডটি পাওয়া যায়নি।',
+  'CASE_NOT_FOUND': 'মামলাটি পাওয়া যায়নি।',
+  'CONTRACT_NOT_FOUND': 'চুক্তিটি পাওয়া যায়নি।',
+  'CONTRACT_EXISTS': 'এই বন্ধুর সাথে ইতিমধ্যে একটি চুক্তি আছে।',
+  'CONFESSION_NOT_FOUND': 'কনফেশনটি পাওয়া যায়নি।',
+  'TITLE_NOT_EARNED': 'এই টাইটেলটি এখনো আনলক হয়নি।',
+  'RECIPIENT_MUTED': 'বন্ধু এই ধরনের পিং বন্ধ রেখেছে।',
+  'INVITE_CODE_GENERATION_FAILED': 'ইনভাইট কোড তৈরি করা যাচ্ছে না।',
 };
 
 AppFailure mapErrorToFailure(Object error) {

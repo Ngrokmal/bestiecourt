@@ -3,7 +3,17 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../features/auth/presentation/auth_gate_screen.dart';
+import '../features/awards/presentation/awards_screen.dart';
+import '../features/bestie_court/presentation/bestie_court_screen.dart';
+import '../features/bluff/domain/bluff_round.dart';
+import '../features/bluff/presentation/bluff_screen.dart';
+import '../features/coins/presentation/coin_history_screen.dart';
+import '../features/confessions/presentation/confessions_screen.dart';
+import '../features/contracts/presentation/contracts_screen.dart';
+import '../features/notifications/presentation/notifications_screen.dart';
 import '../features/roast_battle/presentation/battle_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
+import '../features/social/presentation/social_screen.dart';
 import 'theme/design_tokens.dart';
 
 /// Route table. Auth gating is handled here so a signed-out user can never
@@ -26,6 +36,55 @@ GoRouter buildRouter({required Listenable refresh}) {
         path: '/',
         builder: (BuildContext context, GoRouterState state) =>
             const AuthGateScreen(),
+      ),
+      GoRoute(
+        path: '/court',
+        builder: (BuildContext context, GoRouterState state) =>
+            const BestieCourtScreen(),
+      ),
+      GoRoute(
+        path: '/bluff/:kind',
+        builder: (BuildContext context, GoRouterState state) => BluffScreen(
+          kind: bluffKindFromCode(
+            state.pathParameters['kind'] ?? 'secret_accusation',
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/contracts',
+        builder: (BuildContext context, GoRouterState state) =>
+            const ContractsScreen(),
+      ),
+      GoRoute(
+        path: '/confessions',
+        builder: (BuildContext context, GoRouterState state) =>
+            const ConfessionsScreen(),
+      ),
+      GoRoute(
+        path: '/social/:mode',
+        builder: (BuildContext context, GoRouterState state) => SocialScreen(
+          slapMode: state.pathParameters['mode'] == 'slap',
+        ),
+      ),
+      GoRoute(
+        path: '/awards',
+        builder: (BuildContext context, GoRouterState state) =>
+            const AwardsScreen(),
+      ),
+      GoRoute(
+        path: '/notifications',
+        builder: (BuildContext context, GoRouterState state) =>
+            const NotificationsScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (BuildContext context, GoRouterState state) =>
+            const SettingsScreen(),
+      ),
+      GoRoute(
+        path: '/coins',
+        builder: (BuildContext context, GoRouterState state) =>
+            const CoinHistoryScreen(),
       ),
       GoRoute(
         path: '/battle/:matchId',

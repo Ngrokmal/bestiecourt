@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../../app/theme/design_tokens.dart';
@@ -149,6 +150,26 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: <Widget>[
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/settings'),
+                          icon: const Icon(Icons.settings_outlined, size: 18),
+                          label: const Text('সেটিংস'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => context.push('/coins'),
+                          icon: const Icon(Icons.card_giftcard, size: 18),
+                          label: const Text('কয়েন হিস্ট্রি'),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   const AppCard(
