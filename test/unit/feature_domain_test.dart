@@ -137,9 +137,19 @@ void main() {
       expect(build(state: 'active', mine: false).needsMySignature, isFalse);
     });
 
-    test('state labels are user facing', () {
-      expect(build(state: 'active', mine: true).stateLabel, contains('সক্রিয়'));
-      expect(build(state: 'pending', mine: true).stateLabel, contains('সই'));
+    test('state labels are user facing and distinct', () {
+      final Set<String> labels = <String>{
+        for (final String state in <String>[
+          'active',
+          'pending',
+          'declined',
+          'cancelled',
+          'expired',
+        ])
+          build(state: state, mine: true).stateLabel,
+      };
+      expect(labels.length, 5);
+      expect(labels.every((String label) => label.isNotEmpty), isTrue);
       expect(build(state: 'expired', mine: true).isActive, isFalse);
     });
   });

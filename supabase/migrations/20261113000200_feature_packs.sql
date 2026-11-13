@@ -1572,49 +1572,56 @@ begin
       'value', a.value
     ) as row_data
     from (
-      select 'roast_champion' as code, 'Roast Champion' as label, '🏆' as emoji,
-        x.name as winner_name, x.wins as value
-      from (
-        select p.display_name as name,
-          (select count(*) from public.match_results r
-           where r.winner_id = p.id
-             and r.completed_at > date_trunc('week', now())) as wins
-        from public.profiles p
-        where p.id = v_uid or public.are_friends(v_uid, p.id)
-      ) x
-      where x.wins > 0
-      order by x.wins desc, x.name asc
-      limit 1
-
+      (
+        select 'roast_champion'::text as code,
+          'Roast Champion'::text as label,
+          '🏆'::text as emoji,
+          x.name as winner_name,
+          x.wins as value
+        from (
+          select p.display_name as name,
+            (select count(*) from public.match_results r
+             where r.winner_id = p.id
+               and r.completed_at > date_trunc('week', now())) as wins
+          from public.profiles p
+          where p.id = v_uid or public.are_friends(v_uid, p.id)
+        ) x
+        where x.wins > 0
+        order by x.wins desc, x.name asc
+        limit 1
+      )
       union all
-
-      select 'busy_bee', 'Busy Bee', '🐝', y.name, y.played
-      from (
-        select p.display_name as name,
-          (select count(*) from public.matches m
-           where (m.player_one_id = p.id or m.player_two_id = p.id)
-             and m.state = 'completed'
-             and m.completed_at > date_trunc('week', now())) as played
-        from public.profiles p
-        where p.id = v_uid or public.are_friends(v_uid, p.id)
-      ) y
-      where y.played > 0
-      order by y.played desc, y.name asc
-      limit 1
-
+      (
+        select 'busy_bee'::text, 'Busy Bee'::text, '🐝'::text,
+          y.name, y.played
+        from (
+          select p.display_name as name,
+            (select count(*) from public.matches m
+             where (m.player_one_id = p.id or m.player_two_id = p.id)
+               and m.state = 'completed'
+               and m.completed_at > date_trunc('week', now())) as played
+          from public.profiles p
+          where p.id = v_uid or public.are_friends(v_uid, p.id)
+        ) y
+        where y.played > 0
+        order by y.played desc, y.name asc
+        limit 1
+      )
       union all
-
-      select 'good_bestie', 'Good Bestie', '💖', z.name, z.done
-      from (
-        select p.display_name as name,
-          (select count(*) from public.match_punishments mp
-           where mp.user_id = p.id and mp.status = 'completed') as done
-        from public.profiles p
-        where p.id = v_uid or public.are_friends(v_uid, p.id)
-      ) z
-      where z.done > 0
-      order by z.done desc, z.name asc
-      limit 1
+      (
+        select 'good_bestie'::text, 'Good Bestie'::text, '💖'::text,
+          z.name, z.done
+        from (
+          select p.display_name as name,
+            (select count(*) from public.match_punishments mp
+             where mp.user_id = p.id and mp.status = 'completed') as done
+          from public.profiles p
+          where p.id = v_uid or public.are_friends(v_uid, p.id)
+        ) z
+        where z.done > 0
+        order by z.done desc, z.name asc
+        limit 1
+      )
     ) a
   ) s;
 
