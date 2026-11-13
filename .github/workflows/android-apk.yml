@@ -14,6 +14,8 @@ on:
       - 'pubspec.yaml'
       - 'pubspec.lock'
       - 'assets/**'
+      - 'supabase/**'
+      - 'tool/**'
       - 'analysis_options.yaml'
       - '.github/workflows/android-apk.yml'
 
