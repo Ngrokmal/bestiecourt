@@ -61,6 +61,20 @@ dart format lib test
 11. Skip with too few coins → “পর্যাপ্ত কয়েন নেই”.
 12. Airplane mode → error + retry state (no infinite spinner).
 
+## Verified feature-pack run (2026-11-13)
+
+Workflow run **`43377821591`** on commit `5f439de`, both jobs green:
+
+* `Build release APK` — format (report-only), `flutter analyze` 0 errors /
+  0 warnings (infos only), `flutter test` all green, release APK built and
+  uploaded as artifact **`roast-my-bestie-apk`** (~55 MB).
+* `Validate SQL migrations + RLS smoke test` — `20261113000100_init.sql`,
+  `20261113000200_feature_packs.sql`, `seed.sql` all applied on Postgres 16.4,
+  then the 20-section smoke test printed **SQL SMOKE TEST PASSED**.
+
+Not run: any on-device / emulator test, real push notifications, and the
+two-phone manual checklist below — those still need you.
+
 ## Feature-pack coverage (migration `20261113000200_feature_packs.sql`)
 
 `tool/sql_smoke_test.sql` now has 20 sections. Sections 1–10 are the original
