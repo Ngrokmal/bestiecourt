@@ -106,3 +106,67 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+  sql-check:
+    name: Validate SQL migrations + RLS smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: bestie
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      PGHOST: localhost
+      PGUSER: postgres
+      PGDATABASE: bestie
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # A vanilla PostgreSQL has no Supabase `auth` schema. These shims let the
+      # real migration + seed run unmodified, then the smoke test exercises the
+      # RPCs as the least-privileged `authenticated` role.
+      - name: Stub the Supabase auth schema and roles
+        run: |
+          psql -v ON_ERROR_STOP=1 <<'SQL'
+          create extension if not exists pgcrypto;
+          create schema if not exists auth;
+          create table if not exists auth.users (
+            id uuid primary key default gen_random_uuid(),
+            email text,
+            raw_user_meta_data jsonb not null default '{}'::jsonb
+          );
+          create or replace function auth.uid()
+          returns uuid language sql stable as $fn$
+            select nullif(
+              current_setting('request.jwt.claim.sub', true), ''
+            )::uuid
+          $fn$;
+          create role anon nologin;
+          create role authenticated nologin;
+          create role service_role nologin;
+          SQL
+
+      - name: Apply migrations
+        run: |
+          for file in supabase/migrations/*.sql; do
+            echo "::group::applying $file"
+            psql -v ON_ERROR_STOP=1 -f "$file"
+            echo "::endgroup::"
+          done
+
+      - name: Apply seed
+        run: psql -v ON_ERROR_STOP=1 -f supabase/seed.sql
+
+      - name: Run RLS / business-rule smoke test
+        run: psql -v ON_ERROR_STOP=1 -f tool/sql_smoke_test.sql
