@@ -26,6 +26,11 @@ dependencies:
   intl: ^0.19.0
   equatable: ^2.0.5
 
+  # Pinned on purpose: app_links 6.4.1+ reads `flutter.compileSdkVersion` in its
+  # Gradle file, which only works on Flutter 3.27+ (it still declares >=3.24,
+  # a packaging bug). 6.4.0 hardcodes compileSdk 34 and builds on Flutter 3.24.
+  app_links: 6.4.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
